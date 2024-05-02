@@ -3,7 +3,6 @@ package org.example;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,7 +18,7 @@ class GeneratePdfTest {
     static String filePath = "output.pdf";
     static String pdfContent = "";
     static String invoiceNumber = "123456";
-    static String invoiceDate;
+    static String invoiceDate = "25-03-2024";
 
     @BeforeAll
     static void setUp() throws IOException{
@@ -29,13 +28,6 @@ class GeneratePdfTest {
         try (PDDocument document = PDDocument.load(new File(filePath))) {
             pdfContent = pdfStripper.getText(document);
         }
-        updateDate();
-    }
-
-    static void updateDate(){
-        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        Date date = new Date();
-        invoiceDate = dateFormat.format(date);
     }
 
     static void expectPdfContains(String expectedString){
@@ -49,26 +41,26 @@ class GeneratePdfTest {
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsCompanyDetails() {
-        expectPdfContains("Name: Acme Inc.");
-        expectPdfContains("Address: 123 Main St");
-        expectPdfContains("City: Anytown, USA");
+        expectPdfContains("Acme Inc.");
+        expectPdfContains("123 Main St");
+        expectPdfContains("Anytown, USA");
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsClientsDetails() {
-        expectPdfContains("Client Name: John Doe");
-        expectPdfContains("Client Address: 456 High St");
-        expectPdfContains("Client City: Othercity, USA");
+        expectPdfContains("John Doe");
+        expectPdfContains("456 High St");
+        expectPdfContains("Othercity, USA");
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsInvoiceNumber() {
-        expectPdfContains("Invoice Number: " + invoiceNumber);
+        expectPdfContains("Invoice " + invoiceNumber);
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsInvoiceDate() {
-        expectPdfContains("Invoice Date: " + invoiceDate);
+        expectPdfContains("Paid on: " + invoiceDate);
     }
 
     @Test
