@@ -20,25 +20,26 @@ public class TableCreator {
     public TableCreator() {
     }
 
-    Table createTableWithBoughtItems(Object[][] data) throws IOException {
+    Table createTableWithBoughtItems(Object[][] data, String[] dataHeaders) throws IOException {
 
         final Table.TableBuilder tableBuilder = Table.builder()
-                .addColumnsOfWidth(100, 200, 100, 100)
+                .addColumnsOfWidth(50, 200, 70, 70, 70)
                 .fontSize(8)
                 .font(new PDType1Font(PDType1Font.HELVETICA.getCOSObject()))
                 .borderColor(Color.WHITE);
-
-        addHeader(tableBuilder);
+        addHeader(tableBuilder, dataHeaders);
         addBoughtItems(data, tableBuilder);
-        addTotalRow(tableBuilder, calculateTotal(data));
+        addSubTotalRow(tableBuilder, data);
+        addTotalTaxRow(tableBuilder, data);
+        addGrandTotalRow(tableBuilder, data);
 
         return tableBuilder.build();
     }
 
-    private static void addTotalRow(Table.TableBuilder tableBuilder, double grandTotal) throws IOException {
+    private static void addTotalRow(Table.TableBuilder tableBuilder, String text, double total) throws IOException {
         tableBuilder.addRow(Row.builder()
-                .add(TextCell.builder().text("Total")
-                        .colSpan(3)
+                .add(TextCell.builder().text(text)
+                        .colSpan(4)
                         .lineSpacing(1f)
                         .borderWidthTop(1)
                         .textColor(Color.WHITE)
@@ -47,7 +48,7 @@ public class TableCreator {
                         .font(new PDType1Font(PDType1Font.HELVETICA_OBLIQUE.getCOSObject()))
                         .borderWidth(1)
                         .build())
-                .add(TextCell.builder().text( String.format("%.2f", grandTotal) + " €").backgroundColor(Color.LIGHT_GRAY)
+                .add(TextCell.builder().text( String.format("%.2f", total) + " €").backgroundColor(Color.LIGHT_GRAY)
                         .font(new PDType1Font(PDType1Font.HELVETICA_BOLD_OBLIQUE.getCOSObject()))
                         .verticalAlignment(TOP)
                         .borderWidth(1)
@@ -56,41 +57,68 @@ public class TableCreator {
                 .build());
     }
 
+    private static void addSubTotalRow(Table.TableBuilder tableBuilder, Object[][] data) throws IOException {
+        addTotalRow(tableBuilder, "Subtotal", calculateTotal(data));
+    }
+
+    private static void addTotalTaxRow(Table.TableBuilder tableBuilder, Object[][] data) throws IOException {
+        addTotalRow(tableBuilder,"Total tax", calculateTotalTax(data));
+    }
+
+    private static void addGrandTotalRow(Table.TableBuilder tableBuilder, Object[][] data) throws IOException {
+        addTotalRow(tableBuilder,"Total", calculateTotal(data) + calculateTotalTax(data));
+    }
+
+    private static double calculateTotalTax(Object[][] data) {
+        double taxTotal = 0;
+        for (final Object[] dataRow : data) {
+            double taxPercent = (double) dataRow[3]/100.0;
+            taxTotal += getTotalOfRow(dataRow) * taxPercent;
+        }
+        return taxTotal;
+    }
+
     private static double calculateTotal(Object[][] data) {
         double grandTotal = 0;
         for (final Object[] dataRow : data) {
-            int quantity = (int) dataRow[0];
-            double price = (double) dataRow[2];
-            final double total = quantity * price;
-            grandTotal += total;
+            grandTotal += getTotalOfRow(dataRow);
         }
         return grandTotal;
+    }
+
+    private static double getTotalOfRow(Object[] dataRow) {
+            int quantity = (int) dataRow[0];
+            double price = (double) dataRow[2];
+            return quantity * price;
     }
 
     private static void addBoughtItems(Object[][] data, Table.TableBuilder tableBuilder) {
         for (int i = 0; i < data.length; i++) {
             final Object[] dataRow = data[i];
-            int quantity = (int) dataRow[0];
-            double price = (double) dataRow[2];
-            final double total = quantity * price;
+            Color color = i % 2 == 0 ? BLUE_LIGHT_1 : BLUE_LIGHT_2;
+            addRow(tableBuilder, dataRow, getTotalOfRow(dataRow), color);
+        }
+    }
 
+    private static void addRow(Table.TableBuilder tableBuilder, Object[] dataRow, double total, Color color ) {
             tableBuilder.addRow(Row.builder()
                     .add(TextCell.builder().text(String.valueOf(dataRow[0])).borderWidth(1).build())
                     .add(TextCell.builder().text(String.valueOf(dataRow[1])).horizontalAlignment(LEFT).borderWidth(1).build())
                     .add(TextCell.builder().text(dataRow[2] + " €").borderWidth(1).build())
+                    .add(TextCell.builder().text(dataRow[3] + " %").borderWidth(1).build())
                     .add(TextCell.builder().text(total + " €").borderWidth(1).build())
-                    .backgroundColor(i % 2 == 0 ? BLUE_LIGHT_1 : BLUE_LIGHT_2)
+                    .backgroundColor(color)
                     .horizontalAlignment(RIGHT)
                     .build());
-        }
     }
 
-    private static void addHeader(Table.TableBuilder tableBuilder) throws IOException {
+    private static void addHeader(Table.TableBuilder tableBuilder, String[] headers) throws IOException {
         tableBuilder.addRow(Row.builder()
-                .add(TextCell.builder().text("Quantity").horizontalAlignment(LEFT).borderWidth(1).build())
-                .add(TextCell.builder().text("Description").borderWidth(1).build())
-                .add(TextCell.builder().text("Price").borderWidth(1).build())
-                .add(TextCell.builder().text("Amount").borderWidth(1).build())
+                .add(TextCell.builder().text(String.valueOf(headers[0])).horizontalAlignment(LEFT).borderWidth(1).build())
+                .add(TextCell.builder().text(String.valueOf(headers[1])).borderWidth(1).build())
+                .add(TextCell.builder().text(String.valueOf(headers[2])).borderWidth(1).build())
+                .add(TextCell.builder().text(String.valueOf(headers[3])).borderWidth(1).build())
+                .add(TextCell.builder().text(String.valueOf(headers[4])).borderWidth(1).build())
                 .backgroundColor(BLUE_DARK)
                 .textColor(Color.WHITE)
                 .font(new PDType1Font(PDType1Font.HELVETICA_BOLD.getCOSObject()))

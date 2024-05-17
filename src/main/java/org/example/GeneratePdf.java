@@ -11,23 +11,13 @@ import org.vandeseer.easytable.TableDrawer;
 import org.vandeseer.easytable.structure.Table;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class GeneratePdf {
     private final TableCreator tableCreator = new TableCreator();
-    private PDPageContentStream contentStream;
-    private PDDocument document;
-    private PDPage page;
+    private final PDPageContentStream contentStream;
+    private final PDDocument document;
+    private final PDPage page;
     private static final float PADDING = 50f;
-
-    private final static Object[][] DATA = new Object[][]{
-            {1, "hammer", 15.0},
-            {2, "nails",   5.0},
-            {3, "wood", 45.0},
-            {4, "screws",  59.99}
-    };
 
     public GeneratePdf() throws IOException {
         document = new PDDocument();
@@ -37,27 +27,39 @@ public class GeneratePdf {
         contentStream = new PDPageContentStream(document, page);
     }
 
-    public void createPdf() throws IOException {
-        createPdf("helloWorld.pdf");
-    }
-
-    public void createPdf(String fileName) throws IOException {
+    public void createPdf(PdfConfig config) throws IOException {
         System.out.println("creating PDF");
-        addLogo("logo.png");
-        addText();
-        addTable();
-
-        contentStream.close();
-        document.save(fileName);
-        document.close();
-        System.out.println("PDF saved as: " + fileName);
+        addInformation(config);
+        closeAndSaveFile(config);
     }
 
-    private void addText() throws IOException {
-        addInvoiceNumber("123456");
-        addPaidDate("25-03-2024");
-        addCompanyDetails("Acme Inc.", "123 Main St", "Anytown, USA");
-        addClientDetails("John Doe", "456 High St", "Othercity, USA");
+    private void addInformation(PdfConfig config) throws IOException {
+        if (config.logoPath != null) {
+            addLogo(config.logoPath);
+        }
+        addText(config);
+        if (config.tableData != null && config.tableHeaders != null) {
+            addTable(config.tableData, config.tableHeaders);
+        }
+    }
+
+    private void closeAndSaveFile(PdfConfig config) throws IOException {
+        contentStream.close();
+        if (config.fileName != null) {
+            document.save(config.fileName);
+            System.out.println("PDF saved as: " + config.fileName);
+        } else {
+            document.save("helloWorld.pdf");
+            System.err.println("Warning: No name provided, PDF saved as helloWorld.pdf");
+        }
+        document.close();
+    }
+
+    private void addText(PdfConfig config) throws IOException {
+        addInvoiceNumber(config);
+        addPaidDate(config);
+        addCompanyDetails(config.companyDetails);
+        addClientDetails(config.clientDetails);
     }
 
     private void writeLines(int x, int y, PDType1Font font, int fontSize, String... lines ) throws IOException {
@@ -72,24 +74,40 @@ public class GeneratePdf {
         contentStream.endText();
     }
 
-    private void addCompanyDetails(String name, String address, String city) throws IOException {
-        writeLines(50, 700, PDType1Font.HELVETICA, 12, name, address, city);
+    private void addCompanyDetails(String[] companyDetails) throws IOException {
+        if (companyDetails != null) {
+            writeLines(50, 700, PDType1Font.HELVETICA, 12, companyDetails);
+        } else {
+            System.err.println("Warning: No company details provided");
+        }
     }
 
-    private void addClientDetails(String name, String address, String city) throws IOException {
-        writeLines(350, 650, PDType1Font.HELVETICA, 12, name, address, city);
+    private void addClientDetails(String[] clientDetails) throws IOException {
+        if (clientDetails != null) {
+            writeLines(350, 650, PDType1Font.HELVETICA, 12, clientDetails);
+        } else {
+            System.err.println("Warning: No client details provided");
+        }
     }
 
-    private void addInvoiceNumber(String number) throws IOException {
-        writeLines(350, 750, PDType1Font.HELVETICA_BOLD, 20, "Invoice " + number);
+    private void addInvoiceNumber(PdfConfig config) throws IOException {
+        if (config.invoiceNumber != null && config.title != null) {
+            writeLines(350, 750, PDType1Font.HELVETICA_BOLD, 20, config.title + " " + config.invoiceNumber);
+        } else {
+            System.err.println("Warning: No title or invoice number provided");
+        }
     }
 
-    private void addPaidDate(String date) throws IOException {
-        writeLines(350, 730, PDType1Font.HELVETICA, 12, "Paid on: " + date);
+    private void addPaidDate(PdfConfig config) throws IOException {
+        if (config.paidOnSentence != null && config.invoiceDate != null) {
+            writeLines(350, 730, PDType1Font.HELVETICA, 12, config.paidOnSentence + " " + config.invoiceDate);
+        } else {
+            System.err.println("Warning: No paid on sentence or invoice date provided" );
+        }
     }
 
-    public void addTable() throws IOException {
-        Table table = tableCreator.createTableWithBoughtItems(DATA);
+    public void addTable(Object[][] data, String[] tableHeaders) throws IOException {
+        Table table = tableCreator.createTableWithBoughtItems(data, tableHeaders);
         float startY = 400f;
         TableDrawer.builder()
                         .page(page)
@@ -100,7 +118,6 @@ public class GeneratePdf {
                         .endY(PADDING)
                         .build()
                         .draw(() -> document, () -> new PDPage(PDRectangle.A4), PADDING);
-
     }
 
     private void addLogo(String logoPath) throws IOException {

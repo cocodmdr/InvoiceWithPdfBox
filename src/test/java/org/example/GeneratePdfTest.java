@@ -9,23 +9,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Arrays;
+import java.util.List;
 
 class GeneratePdfTest {
 
-    static String filePath = "output.pdf";
     static String pdfContent = "";
-    static String invoiceNumber = "123456";
-    static String invoiceDate = "25-03-2024";
+
+
+    private final static PdfConfig config = new PdfConfig();
+
+    static void configurePdf(){
+        config.fileName = "output.pdf";
+        config.title = "Invoice";
+        config.logoPath ="logo.png";
+        config.invoiceNumber = "1234567";
+        config.paidOnSentence = "Paid on";
+        config.invoiceDate = "25-03-2024";
+        config.companyDetails = new String[]{"Acme Inc.", "123 Main Street", "Anytown, USA"};
+        config.clientDetails = new String[]{"John Doe","456 High Street","Othercity, USA"};
+        config.tableData = new Object[][]{{1, "hammer", 15.0, 20.0}, {2, "nails",   5.0, 10.0}, {3, "wood", 45.0, 0.0}, {4, "screws",  59.99, 19.99}};
+        config.tableHeaders = new String[]{"Quantity", "Description", "Price", "Tax", "Amount"};
+    }
 
     @BeforeAll
     static void setUp() throws IOException{
+        configurePdf();
         GeneratePdf pdfGenerator = new GeneratePdf();
-        pdfGenerator.createPdf(filePath);
+        pdfGenerator.createPdf(config);
         PDFTextStripper pdfStripper = new PDFTextStripper();
-        try (PDDocument document = PDDocument.load(new File(filePath))) {
+        try (PDDocument document = PDDocument.load(new File(config.fileName))) {
             pdfContent = pdfStripper.getText(document);
         }
     }
@@ -36,77 +49,98 @@ class GeneratePdfTest {
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsATitle() throws IOException {
-        expectPdfContains("Invoice");
-    }
-
-    @Test
-    void GivenAPdfIsGeneratedThenItContainsCompanyDetails() {
-        expectPdfContains("Acme Inc.");
-        expectPdfContains("123 Main St");
-        expectPdfContains("Anytown, USA");
-    }
-
-    @Test
-    void GivenAPdfIsGeneratedThenItContainsClientsDetails() {
-        expectPdfContains("John Doe");
-        expectPdfContains("456 High St");
-        expectPdfContains("Othercity, USA");
+        expectPdfContains(config.title);
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsInvoiceNumber() {
-        expectPdfContains("Invoice " + invoiceNumber);
+        expectPdfContains(config.invoiceNumber);
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsCompanyDetails() {
+        for(final String detail : config.companyDetails) {
+            expectPdfContains(detail);
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsClientsDetails() {
+        for(final String detail : config.clientDetails) {
+            expectPdfContains(detail);
+        }
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsInvoiceDate() {
-        expectPdfContains("Paid on: " + invoiceDate);
+        expectPdfContains(config.paidOnSentence + " " + config.invoiceDate);
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsCorrectNumberOfPages() throws IOException {
-        try (PDDocument document = PDDocument.load(new File(filePath))) {
+        try (PDDocument document = PDDocument.load(new File(config.fileName))) {
             assertEquals(1, document.getNumberOfPages(), "PDF contains incorrect number of pages");
         }
     }
 
     @Test
     void GivenAPdfIsGeneratedThenItContainsTableHeader() {
-        expectPdfContains("Quantity");
-        expectPdfContains("Description");
-        expectPdfContains("Price");
-        expectPdfContains("Amount");
+        for(final String header : config.tableHeaders) {
+            expectPdfContains(header);
+        }
     }
 
     @Test
-    void GivenAPdfIsGeneratedThenItContainsTableRow() {
-        expectPdfContains("1");
-        expectPdfContains("2");
-        expectPdfContains("3");
-        expectPdfContains("4");
-        expectPdfContains("hammer");
-        expectPdfContains("nails");
-        expectPdfContains("wood");
-        expectPdfContains("screws");
-        expectPdfContains("15.0 €");
-        expectPdfContains("5.0 €");
-        expectPdfContains("45.0 €");
-        expectPdfContains("59.99 €");
+    void GivenAPdfIsGeneratedThenItContainsNumberOfItems() {
+        for (final Object[] dataRow : config.tableData) {
+            expectPdfContains(String.valueOf(dataRow[0]));
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsDescriptionOfItems() {
+        for (final Object[] dataRow : config.tableData) {
+            expectPdfContains((String) dataRow[1]);
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsPriceOfItems() {
+        for (final Object[] dataRow : config.tableData) {
+            expectPdfContains(String.valueOf(dataRow[2]) + " €");
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTaxPercentageOfItems() {
+        for (final Object[] dataRow : config.tableData) {
+            expectPdfContains(String.valueOf(dataRow[3]) + " %");
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTotalPerItems() {
         expectPdfContains("15.0 €");
         expectPdfContains("10.0 €");
         expectPdfContains("135.0 €");
         expectPdfContains("239.96 €");
-        expectPdfContains("Total");
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTotalWithoutTax() {
+        expectPdfContains("Subtotal");
         expectPdfContains("399.96 €");
     }
 
     @Test
-    void GivenAPdfIsGeneratedWithoutSpecifyingTheNameThenItIsCalledHelloWorldPdf() throws IOException {
-        GeneratePdf pdfGenerator = new GeneratePdf();
-        pdfGenerator.createPdf();
-        PDFTextStripper pdfStripper = new PDFTextStripper();
-        try (PDDocument document = PDDocument.load(new File("helloWorld.pdf"))) {
-            pdfContent = pdfStripper.getText(document);
-        }
+    void GivenAPdfIsGeneratedThenItContainsTaxTotal() {
+        expectPdfContains("Total tax");
+        expectPdfContains("51.97 €");
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTotalWithTax() {
+        expectPdfContains("Total");
+        expectPdfContains("399.96 €");
     }
 }
