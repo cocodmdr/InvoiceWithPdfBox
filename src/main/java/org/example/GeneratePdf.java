@@ -13,6 +13,7 @@ import org.vandeseer.easytable.structure.Table;
 import java.io.IOException;
 
 public class GeneratePdf {
+    public static final int FONT_SIZE = 10;
     private final TableCreator tableCreator = new TableCreator();
     private final PDPageContentStream contentStream;
     private final PDDocument document;
@@ -34,13 +35,9 @@ public class GeneratePdf {
     }
 
     private void addInformation(PdfConfig config) throws IOException {
-        if (config.logoPath != null) {
-            addLogo(config.logoPath);
-        }
+        addLogo(config.logoPath);
         addText(config);
-        if (config.tableData != null && config.tableHeaders != null) {
-            addTable(config.tableData, config.tableHeaders);
-        }
+        addTable(config.tableData, config.tableHeaders);
     }
 
     private void closeAndSaveFile(PdfConfig config) throws IOException {
@@ -55,11 +52,25 @@ public class GeneratePdf {
         document.close();
     }
 
+    private void addLogo(String logoPath) throws IOException {
+        if (logoPath != null) {
+            PDImageXObject logoImage = PDImageXObject.createFromFile(logoPath, document);
+            int x = 50;
+            int y = 740;
+            int size = 50;
+            contentStream.drawImage(logoImage, x, y, size, size);
+        } else {
+            System.err.println("Warning: No logo provided");
+        }
+    }
+
     private void addText(PdfConfig config) throws IOException {
         addInvoiceNumber(config);
         addPaidDate(config);
         addCompanyDetails(config.companyDetails);
         addClientDetails(config.clientDetails);
+        addAccountStatement(config);
+        addLegalDetails(config.legalDetails);
     }
 
     private void writeLines(int x, int y, PDType1Font font, int fontSize, String... lines ) throws IOException {
@@ -68,7 +79,7 @@ public class GeneratePdf {
         for (final String line : lines) {
             contentStream.newLineAtOffset(x, y); // Start position
             contentStream.showText(line);
-            y =- 20;
+            y =- 13;
             x = 0;
         }
         contentStream.endText();
@@ -76,7 +87,7 @@ public class GeneratePdf {
 
     private void addCompanyDetails(String[] companyDetails) throws IOException {
         if (companyDetails != null) {
-            writeLines(50, 700, PDType1Font.HELVETICA, 12, companyDetails);
+            writeLines(50, 720, PDType1Font.HELVETICA, FONT_SIZE, companyDetails);
         } else {
             System.err.println("Warning: No company details provided");
         }
@@ -84,9 +95,19 @@ public class GeneratePdf {
 
     private void addClientDetails(String[] clientDetails) throws IOException {
         if (clientDetails != null) {
-            writeLines(350, 650, PDType1Font.HELVETICA, 12, clientDetails);
+            writeLines(350, 670, PDType1Font.HELVETICA, FONT_SIZE, clientDetails);
         } else {
             System.err.println("Warning: No client details provided");
+        }
+    }
+
+    private void addAccountStatement(PdfConfig config) throws IOException {
+        if (config.accountStatement != null && config.accountStatementNumber != null && config.accountStatementDate != null) {
+            config.accountStatement[0] += config.accountStatementNumber;
+            config.accountStatement[1] += config.accountStatementDate;
+            writeLines(50, 600, PDType1Font.HELVETICA, FONT_SIZE, config.accountStatement);
+        } else {
+            System.err.println("Warning: No account statement text or number or date provided");
         }
     }
 
@@ -100,30 +121,36 @@ public class GeneratePdf {
 
     private void addPaidDate(PdfConfig config) throws IOException {
         if (config.paidOnSentence != null && config.invoiceDate != null) {
-            writeLines(350, 730, PDType1Font.HELVETICA, 12, config.paidOnSentence + " " + config.invoiceDate);
+            writeLines(350, 730, PDType1Font.HELVETICA, FONT_SIZE, config.paidOnSentence + " " + config.invoiceDate);
         } else {
             System.err.println("Warning: No paid on sentence or invoice date provided" );
         }
     }
 
-    public void addTable(Object[][] data, String[] tableHeaders) throws IOException {
-        Table table = tableCreator.createTableWithBoughtItems(data, tableHeaders);
-        float startY = 400f;
-        TableDrawer.builder()
-                        .page(page)
-                        .contentStream(contentStream)
-                        .table(table)
-                        .startX(PADDING)
-                        .startY(startY)
-                        .endY(PADDING)
-                        .build()
-                        .draw(() -> document, () -> new PDPage(PDRectangle.A4), PADDING);
+    public void addTable(Object[][] data, String[] headers) throws IOException {
+        if (data != null && headers != null) {
+
+            Table table = tableCreator.createTableWithBoughtItems(data, headers);
+            float startY = 400f;
+            TableDrawer.builder()
+                    .page(page)
+                    .contentStream(contentStream)
+                    .table(table)
+                    .startX(PADDING)
+                    .startY(startY)
+                    .endY(PADDING)
+                    .build()
+                    .draw(() -> document, () -> new PDPage(PDRectangle.A4), PADDING);
+        } else {
+            System.err.println("Warning: No table data provided or no table headers provided");
+        }
     }
 
-    private void addLogo(String logoPath) throws IOException {
-        PDImageXObject logoImage = PDImageXObject.createFromFile(logoPath, document);
-        int x = 50;
-        int y = 700;
-        contentStream.drawImage(logoImage, x, y, 100, 100);
+    private void addLegalDetails(String[] legalDetails) throws IOException {
+        if (legalDetails != null) {
+            writeLines(50, 100, PDType1Font.HELVETICA, FONT_SIZE, legalDetails);
+        } else {
+            System.err.println("Warning: No legal details provided");
+        }
     }
 }

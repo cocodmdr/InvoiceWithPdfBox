@@ -14,6 +14,10 @@ public class PdfConfig {
     public String[] companyDetails;
     public String[] clientDetails;
     public String paidOnSentence;
+    public String[] legalDetails;
+    public String[] accountStatement;
+    public String accountStatementNumber;
+    public String accountStatementDate;
 
     public PdfConfig() {}
 }

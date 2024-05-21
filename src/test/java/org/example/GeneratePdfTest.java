@@ -28,8 +28,14 @@ class GeneratePdfTest {
         config.invoiceDate = "25-03-2024";
         config.companyDetails = new String[]{"Acme Inc.", "123 Main Street", "Anytown, USA"};
         config.clientDetails = new String[]{"John Doe","456 High Street","Othercity, USA"};
+        config.accountStatement = new String[]{"Account Statement No. ","Date of Account Statement: ","This document serves as an invoice issued in the name and on behalf of the manager."};
+        config.accountStatementNumber = "12345678";
+        config.accountStatementDate = "25/05/2024";
         config.tableData = new Object[][]{{1, "hammer", 15.0, 20.0}, {2, "nails",   5.0, 10.0}, {3, "wood", 45.0, 0.0}, {4, "screws",  59.99, 19.99}};
         config.tableHeaders = new String[]{"Quantity", "Description", "Price", "Tax", "Amount"};
+        config.legalDetails = new String[]{"This is a computer-generated invoice and does not require a signature.",
+                "For any inquiries regarding this invoice, please contact our customer service at [contact information].",
+                "All payments should be made in [currency] to [payment details]."};
     }
 
     @BeforeAll
@@ -69,6 +75,23 @@ class GeneratePdfTest {
         for(final String detail : config.clientDetails) {
             expectPdfContains(detail);
         }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTheAccountStatement() {
+        for(final String text : config.accountStatement) {
+            expectPdfContains(text);
+        }
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTheAccountStatementNumber() {
+        expectPdfContains(config.accountStatementNumber);
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTheAccountStatementDate() {
+        expectPdfContains(config.accountStatementDate);
     }
 
     @Test
@@ -142,5 +165,12 @@ class GeneratePdfTest {
     void GivenAPdfIsGeneratedThenItContainsTotalWithTax() {
         expectPdfContains("Total");
         expectPdfContains("399.96 €");
+    }
+
+    @Test
+    void GivenAPdfIsGeneratedThenItContainsTheLegalMentions() {
+        for(final String text : config.legalDetails) {
+            expectPdfContains(text);
+        }
     }
 }

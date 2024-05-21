@@ -20,14 +20,14 @@ public class TableCreator {
     public TableCreator() {
     }
 
-    Table createTableWithBoughtItems(Object[][] data, String[] dataHeaders) throws IOException {
+    Table createTableWithBoughtItems(Object[][] data, String[] headers) throws IOException {
 
         final Table.TableBuilder tableBuilder = Table.builder()
                 .addColumnsOfWidth(50, 200, 70, 70, 70)
                 .fontSize(8)
                 .font(new PDType1Font(PDType1Font.HELVETICA.getCOSObject()))
                 .borderColor(Color.WHITE);
-        addHeader(tableBuilder, dataHeaders);
+        addHeader(tableBuilder, headers);
         addBoughtItems(data, tableBuilder);
         addSubTotalRow(tableBuilder, data);
         addTotalTaxRow(tableBuilder, data);
@@ -114,11 +114,11 @@ public class TableCreator {
 
     private static void addHeader(Table.TableBuilder tableBuilder, String[] headers) throws IOException {
         tableBuilder.addRow(Row.builder()
-                .add(TextCell.builder().text(String.valueOf(headers[0])).horizontalAlignment(LEFT).borderWidth(1).build())
-                .add(TextCell.builder().text(String.valueOf(headers[1])).borderWidth(1).build())
-                .add(TextCell.builder().text(String.valueOf(headers[2])).borderWidth(1).build())
-                .add(TextCell.builder().text(String.valueOf(headers[3])).borderWidth(1).build())
-                .add(TextCell.builder().text(String.valueOf(headers[4])).borderWidth(1).build())
+                .add(TextCell.builder().text(headers[0]).horizontalAlignment(LEFT).borderWidth(1).build())
+                .add(TextCell.builder().text(headers[1]).borderWidth(1).build())
+                .add(TextCell.builder().text(headers[2]).borderWidth(1).build())
+                .add(TextCell.builder().text(headers[3]).borderWidth(1).build())
+                .add(TextCell.builder().text(headers[4]).borderWidth(1).build())
                 .backgroundColor(BLUE_DARK)
                 .textColor(Color.WHITE)
                 .font(new PDType1Font(PDType1Font.HELVETICA_BOLD.getCOSObject()))
